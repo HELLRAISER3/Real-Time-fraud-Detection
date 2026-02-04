@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+numpy
+matplotlib
+pandas
+scikit-learn
+xgboost
+feast
+redis
+pyarrow
+streamlit
+joblib
+plotly
