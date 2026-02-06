@@ -1,0 +1,23 @@
+artifact_path: /Users/mac/Desktop/python_struggle/ML/Real-Time fraud Detection/mlruns/1/models/m-8bdfced1afe44c7fb4099836cec6606c/artifacts
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.13.5
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.8.0
+    skops_trusted_types: null
+mlflow_version: 3.9.0
+model_id: m-8bdfced1afe44c7fb4099836cec6606c
+model_size_bytes: 952
+model_uuid: m-8bdfced1afe44c7fb4099836cec6606c
+prompts: null
+run_id: 907c30e819944b6fac29ef4ae0a924ea
+utc_time_created: '2026-02-06 09:33:33.439012'
