@@ -11,3 +11,4 @@ pyarrow
 streamlit
 joblib
 plotly
+mlflow
