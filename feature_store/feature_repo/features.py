@@ -12,7 +12,7 @@ customer = Entity(
 )
 
 source = FileSource(
-    path="../data/customer_features.parquet",
+    path="../../data/feature_store/customer_features.parquet",
     event_timestamp_column="event_timestamp",
 )
 
