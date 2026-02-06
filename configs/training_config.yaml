@@ -1,5 +1,5 @@
 model:
-  name: logistic_regression  
+  name: random_forest  
   logistic_regression:
     C: 1.0
     max_iter: 1000
@@ -8,10 +8,10 @@ model:
     n_estimators: 200
     max_depth: 10
 
-  # xgboost:
-  #   n_estimators: 300
-  #   max_depth: 6
-  #   learning_rate: 0.05
+  xgboost:
+    n_estimators: 300
+    max_depth: 6
+    learning_rate: 0.05
 
 training:
   test_size: 0.2

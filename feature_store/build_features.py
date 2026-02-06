@@ -13,9 +13,18 @@ with open(RAW_PATH) as f:
 
 df = pd.DataFrame(rows)
 
-df["transactionDateTime"] = pd.to_datetime(df["transactionDateTime"])
+df_sorted = df.sort_values(["customerId", "transactionDateTime"])
 
-df = df.sort_values(["customerId", "transactionDateTime"])
+grouped = df_sorted.groupby("customerId")
+
+df_sorted['hist_fraud_sum'] = grouped['isFraud'].transform(lambda x: x.expanding().sum().shift(1).fillna(0))
+df_sorted['hist_txn_count'] = grouped['isFraud'].transform(lambda x: x.expanding().count().shift(1).fillna(0))
+df_sorted['fraud_rate'] = df_sorted['hist_fraud_sum'] / df_sorted['hist_txn_count'].replace(0, 1)
+
+df_sorted['avg_amount_30d'] = (
+    grouped['transactionAmount']
+    .transform(lambda x: x.expanding().mean().shift(1).fillna(0))
+)
 
 features = (
     df.groupby("customerId")

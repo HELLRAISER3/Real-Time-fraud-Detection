@@ -27,7 +27,9 @@ mlflow.set_experiment("fraud_detection")
 
 with mlflow.start_run(run_name=config["model"]["name"]):
 
-    model = get_model(config)
+    imbalance_ratio = (y_train == 0).sum() / (y_train == 1).sum()
+
+    model = get_model(config, xgb_scale_pos_weight=imbalance_ratio)
 
     model.fit(X_train, y_train)
 
@@ -41,7 +43,7 @@ with mlflow.start_run(run_name=config["model"]["name"]):
     precision_t = precision_arr[:-1]
     recall_t = recall_arr[:-1]
 
-    mask = precision_t >= 0.10
+    mask = precision_t >= 0.05
 
     if mask.any():
         best_idx = recall_t[mask].argmax()

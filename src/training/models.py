@@ -1,8 +1,8 @@
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
-# from xgboost import XGBClassifier
+from xgboost import XGBClassifier
 
-def get_model(config):
+def get_model(config, xgb_scale_pos_weight = 62):
     name = config["model"]["name"]
 
     if name == "logistic_regression":
@@ -13,13 +13,14 @@ def get_model(config):
         params = config["model"]["random_forest"]
         return RandomForestClassifier(**params)
 
-    # if name == "xgboost":
-    #     params = config["model"]["xgboost"]
-    #     return XGBClassifier(
-    #         **params,
-    #         eval_metric="auc",
-    #         tree_method="hist",
-    #         random_state=42,
-    #     )
+    if name == "xgboost":
+        params = config["model"]["xgboost"]
+        return XGBClassifier(
+            **params,
+            scale_pos_weight = xgb_scale_pos_weight, # Approximate ratio (non_fraud_count / fraud_count)  
+            eval_metric="auc",
+            tree_method="hist",
+            random_state=42,
+        )
 
     raise ValueError(f"Unknown model: {name}")
