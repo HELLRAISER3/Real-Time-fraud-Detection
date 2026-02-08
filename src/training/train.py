@@ -1,12 +1,10 @@
 import yaml
 import mlflow
-import pandas as pd
-
-from sklearn.model_selection import train_test_split
+from src.data_pipeline.data_pipeline import preprocess_data
 from sklearn.metrics import roc_auc_score, precision_recall_curve, precision_score, recall_score
 from src.training.models import get_model
+from src.data_pipeline.load_dataset import load_dataset
 
-from src.load_dataset import load_dataset
 
 with open("configs/training_config.yaml") as f:
     config = yaml.safe_load(f)
@@ -14,16 +12,11 @@ with open("configs/training_config.yaml") as f:
 df = load_dataset(filepath="data/training/training_dataset.parquet",
                   ext="parquet")
 
-X = df.drop(columns=["label"])
-y = df["label"]
-
-X_train, X_val, y_train, y_val = train_test_split(
-    X,
-    y,
-    test_size=config["training"]["test_size"],
-    random_state=config["training"]["random_state"],
-    stratify=y,
-)
+X_train, y_train, X_val, y_val, X_test, y_test = preprocess_data(df=df, 
+                                                                 target='label',
+                                                                 test_size=0.15,
+                                                                 val_size=0.1,
+                                                                 standardization=config["training"]["standardization"])
 
 mlflow.set_experiment("loan_risk_prediction")
 
