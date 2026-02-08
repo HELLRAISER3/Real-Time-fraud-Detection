@@ -1,52 +1,50 @@
-import json
 import pandas as pd
 
-RAW_PATH = "data/raw/transactions.txt"
+RAW_PATH = "data/raw/transactions.csv"
 FEATURES_PATH = "data/feature_store/customer_features.parquet"
 OUTPUT_PATH = "data/training/training_dataset.parquet"
 OUTPUT_PATH_CSV = "data/training/training_dataset.csv"
 
+def run():
+    df_raw = pd.read_csv(RAW_PATH)
+    
+    cohort = df_raw[[
+        'SK_ID_CURR', 
+        'TARGET', 
+        'NAME_CONTRACT_TYPE', 
+        'CODE_GENDER'
+    ]].copy()
 
-rows = []
-with open(RAW_PATH) as f:
-    for line in f:
-        rows.append(json.loads(line))
+    cohort['is_cash_loan'] = cohort['NAME_CONTRACT_TYPE'].apply(lambda x: 1 if x == 'Cash loans' else 0)
+    cohort['is_male'] = cohort['CODE_GENDER'].apply(lambda x: 1 if x == 'M' else 0)
 
-tx = pd.DataFrame(rows)
-tx["transactionDateTime"] = pd.to_datetime(tx["transactionDateTime"])
+    cohort.rename(columns={'TARGET': 'label'}, inplace=True)
 
-tx.rename(
-    columns={
-        "customerId": "customer_id",
-        "transactionDateTime": "event_timestamp",
-        "isFraud": "label",
-    },
-    inplace=True,
-)
+    features = pd.read_parquet(FEATURES_PATH)
 
-features = pd.read_parquet(FEATURES_PATH)
+    training_df = cohort.merge(
+        features,
+        on="SK_ID_CURR",
+        how="left"
+    )
 
-training_df = tx.merge(
-    features,
-    on="customer_id",
-    how="left",
-    suffixes=("", "_hist"),
-)
-
-training_df = training_df[
-    [
-        "transactionAmount",
-        "cardPresent",
-        "txn_count_30d",
-        "avg_amount_30d",
-        "max_amount_30d",
-        "card_present_ratio",
-        "fraud_rate",
-        "label",
+    selected_columns = [
+        'SK_ID_CURR', 'label',
+        'is_male', 'age_years', 'years_employed', 'flag_own_car', 'flag_own_realty',
+        'credit_to_income_ratio', 
+        'annuity_to_income_ratio',
+        'income_per_person',
+        'ext_source_1', 
+        'ext_source_2', 
+        'ext_source_3',
+        'ext_source_mean'
     ]
-]
+    
+    training_df = training_df[selected_columns]
 
-training_df.to_parquet(OUTPUT_PATH, index=False)
-training_df.to_csv(OUTPUT_PATH_CSV, index=False)
+    print(f"Saving training set with shape {training_df.shape}...")
+    training_df.to_parquet(OUTPUT_PATH, index=False)
+    training_df.to_csv(OUTPUT_PATH_CSV, index=False)
 
-
+if __name__ == "__main__":
+    run()

@@ -1,4 +1,4 @@
-project: fraud_detection
+project: loan_risk_prediction
 registry: data/registry.db
 provider: local
 
@@ -7,4 +7,4 @@ offline_store:
 
 online_store:
   type: redis
-  connection_string: "localhost:6379" # or localhost
+  connection_string: "localhost:6379"

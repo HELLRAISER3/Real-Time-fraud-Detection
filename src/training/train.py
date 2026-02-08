@@ -6,11 +6,13 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score, precision_recall_curve, precision_score, recall_score
 from src.training.models import get_model
 
+from src.load_dataset import load_dataset
 
 with open("configs/training_config.yaml") as f:
     config = yaml.safe_load(f)
 
-df = pd.read_parquet("data/training/training_dataset.parquet")
+df = load_dataset(filepath="data/training/training_dataset.parquet",
+                  ext="parquet")
 
 X = df.drop(columns=["label"])
 y = df["label"]
@@ -23,7 +25,7 @@ X_train, X_val, y_train, y_val = train_test_split(
     stratify=y,
 )
 
-mlflow.set_experiment("fraud_detection")
+mlflow.set_experiment("loan_risk_prediction")
 
 with mlflow.start_run(run_name=config["model"]["name"]):
 
@@ -43,7 +45,7 @@ with mlflow.start_run(run_name=config["model"]["name"]):
     precision_t = precision_arr[:-1]
     recall_t = recall_arr[:-1]
 
-    mask = precision_t >= 0.05
+    mask = precision_t >= 0.1
 
     if mask.any():
         best_idx = recall_t[mask].argmax()

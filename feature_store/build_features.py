@@ -1,46 +1,58 @@
-import json
 import pandas as pd
+import numpy as np
+from pathlib import Path
 
-RAW_PATH = "data/raw/transactions.txt"
+
+RAW_PATH = "data/raw/transactions.csv" 
 OUTPUT_PATH = "data/feature_store/customer_features.parquet"
 OUTPUT_PATH_CSV = "data/feature_store/customer_features.csv"
 
+def load_data(path):
+    path = Path(path)
+    print(path.absolute())
+    return pd.read_csv(path)
 
-rows = []
-with open(RAW_PATH) as f:
-    for line in f:
-        rows.append(json.loads(line))
+def engineer_features(df):
 
-df = pd.DataFrame(rows)
+    features = pd.DataFrame()
+    features['SK_ID_CURR'] = df['SK_ID_CURR']
+    
+    features['credit_to_income_ratio'] = df['AMT_CREDIT'] / df['AMT_INCOME_TOTAL']
+    
+    features['annuity_to_income_ratio'] = df['AMT_ANNUITY'] / df['AMT_INCOME_TOTAL']
+    
+    features['credit_term_approx'] = df['AMT_CREDIT'] / df['AMT_ANNUITY']
+    
+    features['goods_price_to_credit_ratio'] = df['AMT_GOODS_PRICE'] / df['AMT_CREDIT']
 
-df_sorted = df.sort_values(["customerId", "transactionDateTime"])
+    features['age_years'] = df['DAYS_BIRTH'] / -365.25
+    
+    features['years_employed'] = df['DAYS_EMPLOYED'].replace(365243, np.nan) / -365.25
+    
+    features['employed_to_age_ratio'] = features['years_employed'] / features['age_years']
+    
+    features['income_per_person'] = df['AMT_INCOME_TOTAL'] / df['CNT_FAM_MEMBERS']
 
-grouped = df_sorted.groupby("customerId")
+    features['ext_source_1'] = df['EXT_SOURCE_1']
+    features['ext_source_2'] = df['EXT_SOURCE_2']
+    features['ext_source_3'] = df['EXT_SOURCE_3']
+    
+    features['ext_source_mean'] = df[['EXT_SOURCE_1', 'EXT_SOURCE_2', 'EXT_SOURCE_3']].mean(axis=1)
 
-df_sorted['hist_fraud_sum'] = grouped['isFraud'].transform(lambda x: x.expanding().sum().shift(1).fillna(0))
-df_sorted['hist_txn_count'] = grouped['isFraud'].transform(lambda x: x.expanding().count().shift(1).fillna(0))
-df_sorted['fraud_rate'] = df_sorted['hist_fraud_sum'] / df_sorted['hist_txn_count'].replace(0, 1)
+    features['flag_own_car'] = df['FLAG_OWN_CAR'].apply(lambda x: 1 if x == 'Y' else 0)
+    features['flag_own_realty'] = df['FLAG_OWN_REALTY'].apply(lambda x: 1 if x == 'Y' else 0)
+    
+    return features
 
-df_sorted['avg_amount_30d'] = (
-    grouped['transactionAmount']
-    .transform(lambda x: x.expanding().mean().shift(1).fillna(0))
-)
+if __name__ == "__main__":
+    df_raw = load_data(RAW_PATH)
+    
+    df_features = engineer_features(df_raw)
+    
+    print(f"Saving {len(df_features)} rows to feature store...")
 
-features = (
-    df.groupby("customerId")
-    .agg(
-        txn_count_30d=("transactionAmount", "count"),
-        avg_amount_30d=("transactionAmount", "mean"),
-        max_amount_30d=("transactionAmount", "max"),
-        card_present_ratio=("cardPresent", "mean"),
-        fraud_rate=("isFraud", "mean"),  
-        event_timestamp=("transactionDateTime", "max"),
-    )
-    .reset_index()
-)
+    df_features['event_timestamp'] = pd.Timestamp.now()
+    df_features['created_timestamp'] = pd.Timestamp.now()
 
-features.rename(columns={"customerId": "customer_id"}, inplace=True)
-
-features.to_parquet(OUTPUT_PATH, index=False)
-features.to_csv(OUTPUT_PATH_CSV, index=False)
-
+    df_features.to_parquet(OUTPUT_PATH, index=False)
+    df_features.to_csv(OUTPUT_PATH_CSV, index=False)
