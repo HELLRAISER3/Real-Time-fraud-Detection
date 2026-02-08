@@ -1,0 +1,8 @@
+tuning:
+  model_name: "xgboost"
+  n_trials: 100
+  direction: "maximize"
+  metric: "best_f1"
+  pruner: "MedianPruner"
+  param_ranges: {} 
+  study_name: "loan_risk_tuning"

@@ -1,5 +1,5 @@
 model:
-  name: logistic_regression  
+  name: xgboost  
   logistic_regression:
     C: 1.0
     max_iter: 1000
@@ -16,4 +16,4 @@ model:
 training:
   test_size: 0.2
   random_state: 42
-  standardization: True
+  standardization: False

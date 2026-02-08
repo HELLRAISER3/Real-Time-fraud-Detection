@@ -8,7 +8,8 @@ xgboost
 feast
 redis
 pyarrow
-streamlit
 joblib
 plotly
 mlflow
+optuna
+optuna-integration
