@@ -10,7 +10,7 @@ import numpy as np
 with open("configs/training_config.yaml") as f:
     config = yaml.safe_load(f)
 
-df = load_dataset(filepath="data/training/training_dataset.parquet",
+df = load_dataset(filepath="data/training_processed/training_dataset_final.parquet",
                   ext="parquet")
 
 X_train, y_train, X_val, y_val, X_test, y_test = preprocess_data(df=df, 
