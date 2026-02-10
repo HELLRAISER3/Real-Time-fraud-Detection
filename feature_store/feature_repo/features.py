@@ -13,7 +13,7 @@ applicant = Entity(
 
 source = FileSource(
     name="applicant_features_source",
-    path="../data/feature_store/customer_features.parquet",
+    path="../../data/feature_store/customer_features.parquet",
     timestamp_field="event_timestamp",
     created_timestamp_column="created_timestamp",
 )
@@ -40,6 +40,7 @@ applicant_risk_features = FeatureView(
         
         Field(name="flag_own_car", dtype=Int64),
         Field(name="flag_own_realty", dtype=Int64),
+        
     ],
     source=source,
     tags={"team": "risk_scoring", "model_type": "credit_default"},

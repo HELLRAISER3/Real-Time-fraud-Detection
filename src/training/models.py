@@ -17,7 +17,7 @@ def get_model(config, xgb_scale_pos_weight = 62):
         params = config["model"]["xgboost"]
         return XGBClassifier(
             **params,
-            scale_pos_weight = xgb_scale_pos_weight, # Approximate ratio (non_fraud_count / fraud_count)  
+            scale_pos_weight = xgb_scale_pos_weight, 
             eval_metric="auc",
             tree_method="hist",
             random_state=42,
