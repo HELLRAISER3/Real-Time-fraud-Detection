@@ -11,12 +11,22 @@ from src.serving.schemas import (
 from src.serving.model_loader import ModelLoader
 from src.serving.feature_service import FeatureService
 from logger.log import logging
-with open("configs/serving_config.yaml") as f:
+import os
+
+config_path = os.getenv("SERVING_CONFIG", "configs/serving_config.yaml")
+with open(config_path) as f:
     config = yaml.safe_load(f)
 
-app = FastAPI(title="Fraud Detection API", version="2.0.0")
+config["api"]["host"] = os.getenv("API_HOST", config["api"]["host"])
+config["api"]["port"] = int(os.getenv("API_PORT", config["api"]["port"]))
+config["mlflow"]["tracking_uri"] = os.getenv(
+    "MLFLOW_TRACKING_URI", 
+    config["mlflow"]["tracking_uri"]
+)
 
-REPO_PATH = "feature_store/feature_repo"
+REPO_PATH = os.getenv("FEAST_REPO_PATH", "feature_store/feature_repo")
+
+app = FastAPI(title="Fraud Detection API", version="2.0.0")
 
 feature_service = FeatureService(repo_path=REPO_PATH)
 

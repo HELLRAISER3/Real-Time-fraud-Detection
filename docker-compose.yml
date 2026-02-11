@@ -1,0 +1,163 @@
+
+networks:
+  fraud-detection-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  redis-data:
+    driver: local
+  mlflow-data:
+    driver: local
+  feast-registry:
+    driver: local
+  training-data:
+    driver: local
+
+services:
+  # Redis 
+  redis:
+    image: redis:7.2-alpine
+    container_name: fraud-redis
+    command: >
+      redis-server 
+      --appendonly yes 
+      --appendfsync everysec
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      fraud-detection-net:
+        ipv4_address: 172.20.0.2
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  # FastAPI Serving 
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.serving
+      target: runtime
+    image: fraud-detection-api:latest
+    container_name: fraud-api
+    env_file:
+      - .env.docker
+    depends_on:
+      redis:
+        condition: service_healthy
+      mlflow: #wait for mlflow server
+        condition: service_started
+    ports:
+      - "8000:8000"
+    environment:
+      API_HOST: 0.0.0.0
+      API_PORT: 8000
+      API_WORKERS: 4
+      
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      
+      FEAST_REDIS_HOST: redis
+      FEAST_REDIS_PORT: 6379
+      LOG_LEVEL: info
+      PYTHONUNBUFFERED: 1
+    volumes:
+      - ./configs:/app/configs:ro
+      - feast-registry:/app/feature_store/feature_repo/data
+    networks:
+      fraud-detection-net:
+        ipv4_address: 172.20.0.3
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2.0'
+        reservations:
+          memory: 1G
+          cpus: '1.0'
+
+  # MLflow Server
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.17.2
+    container_name: fraud-mlflow
+    ports:
+      - "5001:5000"
+    environment:
+      MLFLOW_TRACKING_URI: http://fraud-mlflow:5000
+      MLFLOW_BACKEND_STORE_URI: sqlite:///mlflow/mlflow.db
+      MLFLOW_ARTIFACT_ROOT: /mlflow/artifacts
+    volumes:
+      - mlflow-data:/mlflow
+    command: >
+      mlflow server
+      --backend-store-uri sqlite:///mlflow/mlflow.db
+      --default-artifact-root /mlflow/artifacts
+      --host 0.0.0.0
+      --port 5000
+    env_file:
+      - .env.docker
+    networks:
+      fraud-detection-net:
+        ipv4_address: 172.20.0.4
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
+  # On-demand model training 
+  training:
+    build:
+      context: .
+      dockerfile: Dockerfile.training
+      target: runtime
+    image: fraud-detection-training:latest
+    container_name: fraud-training
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      PYTHONUNBUFFERED: 1
+    volumes:
+      - ./data:/app/data:ro
+      - ./configs:/app/configs:ro
+    networks:
+      - fraud-detection-net
+    env_file:
+      - .env.docker
+    profiles:
+      - training  
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '4.0'
+        reservations:
+          memory: 2G
+          cpus: '2.0'

@@ -1,0 +1,17 @@
+
+api:
+  host: 0.0.0.0  
+  port: 8000
+
+mlflow:
+  tracking_uri: "${MLFLOW_TRACKING_URI:sqlite:///mlflow.db}"
+  experiment_name: "loan_risk_prediction"
+
+feast:
+  repo_path: "feature_store/feature_repo"
+  redis_host: "${FEAST_REDIS_HOST:redis}"
+  redis_port: ${FEAST_REDIS_PORT:6379}
+
+logging:
+  level: "${LOG_LEVEL:info}"
+  format: "json"  

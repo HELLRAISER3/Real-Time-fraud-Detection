@@ -7,6 +7,6 @@ offline_store:
 
 online_store:
   type: redis
-  connection_string: "127.0.0.1:6379"
+  connection_string: "${FEAST_REDIS_HOST:127.0.0.1}:${FEAST_REDIS_PORT:6379}"
 
 # redis IP: 172.17.0.2

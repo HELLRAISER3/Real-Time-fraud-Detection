@@ -17,3 +17,11 @@ training:
   test_size: 0.2
   random_state: 42
   standardization: False
+  
+  data_path: "data/training_processed/training_dataset_final.parquet"
+  output_dir: "mlruns"
+
+mlflow:
+  tracking_uri: "sqlite:///mlflow.db"  
+  experiment_name: "loan_risk_prediction"
+  artifact_location: "mlruns"

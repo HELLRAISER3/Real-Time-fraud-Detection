@@ -1,0 +1,68 @@
+FROM python:3.11-slim-bookworm AS builder
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+WORKDIR /build
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements-base.txt requirements-serving.txt ./
+
+RUN python -m venv /opt/venv && \
+    /opt/venv/bin/pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    /opt/venv/bin/pip install --no-cache-dir -r requirements-serving.txt
+
+FROM python:3.11-slim-bookworm AS runtime
+
+# Metadata
+LABEL maintainer="your-email@example.com" \
+      version="2.0.0" \
+      description="Fraud Detection API - FastAPI serving with Feast" \
+      project="fraud-detection-serving"
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PATH="/opt/venv/bin:$PATH" \
+    API_HOST=0.0.0.0 \
+    API_PORT=8000 \
+    API_WORKERS=4 \
+    FEAST_REDIS_HOST=redis \
+    FEAST_REDIS_PORT=6379 \
+    LOG_LEVEL=info
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgomp1 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN groupadd -r apiuser && useradd -r -g apiuser -u 1000 apiuser
+
+WORKDIR /app
+
+COPY --from=builder /opt/venv /opt/venv
+
+COPY src/ ./src/
+COPY configs/ ./configs/
+COPY feature_store/ ./feature_store/
+COPY logger/ ./logger/
+
+RUN mkdir -p logs && \
+    chown -R apiuser:apiuser /app
+
+USER apiuser
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+ENTRYPOINT ["uvicorn"]
+CMD ["src.serving.app:app", \
+     "--host", "0.0.0.0", \
+     "--port", "8000", \
+     "--workers", "4", \
+     "--loop", "uvloop", \
+     "--http", "httptools"]
