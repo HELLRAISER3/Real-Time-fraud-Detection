@@ -5,7 +5,7 @@ from sklearn.metrics import roc_auc_score, precision_recall_curve, precision_sco
 from src.training.models import get_model
 from src.data_pipeline.load_dataset import load_dataset
 import numpy as np
-
+from logger.log import logging
 
 with open("configs/training_config.yaml") as f:
     config = yaml.safe_load(f)
@@ -22,7 +22,7 @@ X_train, y_train, X_val, y_val, X_test, y_test = preprocess_data(df=df,
 mlflow.set_experiment("loan_risk_prediction")
 
 with mlflow.start_run(run_name=config["model"]["name"]):
-
+    logging.info(f'=== Training experiment for model: {config["model"]["name"]} is started ===')
     imbalance_ratio = (y_train == 0).sum() / (y_train == 1).sum()
 
     model = get_model(config, xgb_scale_pos_weight=imbalance_ratio)
@@ -47,6 +47,7 @@ with mlflow.start_run(run_name=config["model"]["name"]):
     best_recall = recall_t[best_idx]
     best_f1 = f1_scores[best_idx]
 
+    logging.info(f'=== Training experiment finished, best_f1: {best_f1} ===')
 
     mlflow.log_param("model_name", config["model"]["name"])
     mlflow.log_params(config["model"][config["model"]["name"]])

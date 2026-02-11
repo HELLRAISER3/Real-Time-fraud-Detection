@@ -10,7 +10,7 @@ from src.serving.schemas import (
 )
 from src.serving.model_loader import ModelLoader
 from src.serving.feature_service import FeatureService
-
+from logger.log import logging
 with open("configs/serving_config.yaml") as f:
     config = yaml.safe_load(f)
 
@@ -56,6 +56,7 @@ EXPECTED_COLUMNS = [
 @app.post("/predict", response_model=PredictionResponse)
 async def predict(request: PredictionRequest):
     try:
+        logging.info('=== Prediction started ===')
         request_data = request.model_dump(exclude_unset=True)
         feast_features = feature_service.get_online_features(request_data.get("SK_ID_CURR"))
         merged_features = {**feast_features, **request_data}
@@ -64,7 +65,8 @@ async def predict(request: PredictionRequest):
         amt_goods = request_data.get("AMT_GOODS_PRICE", 0.0)
         merged_features["goods_price_to_credit_ratio"] = amt_goods / amt_credit
         features_df = pd.DataFrame([merged_features])
-        print(features_df)
+
+        logging.info('features used for prediction: ', features_df)
         
         for col in EXPECTED_COLUMNS:
             if col not in features_df.columns:
