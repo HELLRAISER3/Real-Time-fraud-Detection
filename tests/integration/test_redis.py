@@ -1,5 +1,4 @@
 from feast import FeatureStore
-import pandas as pd
 
 store = FeatureStore(repo_path="feature_store/feature_repo")
 

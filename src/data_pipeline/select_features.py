@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 import mlflow
 import mlflow.sklearn
 import yaml

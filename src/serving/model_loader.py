@@ -1,7 +1,6 @@
 import mlflow
 import mlflow.sklearn
 import pandas as pd
-import numpy as np
 from sklearn.impute import SimpleImputer
 
 class ModelLoader:

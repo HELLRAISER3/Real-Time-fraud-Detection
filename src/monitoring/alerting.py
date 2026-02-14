@@ -1,7 +1,5 @@
 from logger.log import logging
 import os
-from typing import Optional
-
 
 def alert_model_failure(message: str):
     logging.error(f"MODEL FAILURE: {message}")

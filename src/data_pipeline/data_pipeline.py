@@ -3,7 +3,6 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
 from sklearn.model_selection import StratifiedShuffleSplit
-import pandas as pd
 
 
 def get_feature_lists(df):

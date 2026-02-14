@@ -1,10 +1,9 @@
 import yaml
-import mlflow
-import copy  # Add this import
+import copy  
 from src.data_pipeline.data_pipeline import preprocess_data
 from src.data_pipeline.load_dataset import load_dataset
 from src.training.models import get_model
-from sklearn.metrics import roc_auc_score, precision_recall_curve
+from sklearn.metrics import precision_recall_curve
 import numpy as np
 
 def create_objective(config_path="configs/training_config.yaml", tuning_config_path="configs/optuna_config.yaml"):
