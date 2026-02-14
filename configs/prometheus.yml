@@ -1,0 +1,24 @@
+global:
+  scrape_interval: 15s  
+  evaluation_interval: 15s 
+  external_labels:
+    cluster: 'fraud-detection'
+    environment: 'production'
+
+scrape_configs:
+  - job_name: 'fraud-api'
+    static_configs:
+      - targets: ['api:8000']  
+        labels:
+          service: 'fraud-detection-api'
+          component: 'api'
+
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+
+# Alerting rules
+rule_files:
+  # - "alert_rules.yml"
