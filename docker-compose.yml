@@ -60,17 +60,18 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-      mlflow: #wait for mlflow server
-        condition: service_started
+      mlflow:
+        condition: service_healthy
     ports:
       - "8000:8000"
     environment:
       API_HOST: 0.0.0.0
       API_PORT: 8000
       API_WORKERS: 4
-      
+
       MLFLOW_TRACKING_URI: http://mlflow:5000
-      
+      SERVING_CONFIG: configs/serving_config.docker.yaml
+
       FEAST_REDIS_HOST: redis
       FEAST_REDIS_PORT: 6379
       LOG_LEVEL: info
@@ -78,6 +79,7 @@ services:
     volumes:
       - ./configs:/app/configs:ro
       - feast-registry:/app/feature_store/feature_repo/data
+      - mlflow-data:/mlflow:ro
     networks:
       fraud-detection-net:
         ipv4_address: 172.20.0.3
@@ -99,12 +101,11 @@ services:
 
   # MLflow Server
   mlflow:
-    image: ghcr.io/mlflow/mlflow:v2.17.2
+    image: ghcr.io/mlflow/mlflow:v3.9.0
     container_name: fraud-mlflow
     ports:
       - "5001:5000"
     environment:
-      MLFLOW_TRACKING_URI: http://fraud-mlflow:5000
       MLFLOW_BACKEND_STORE_URI: sqlite:///mlflow/mlflow.db
       MLFLOW_ARTIFACT_ROOT: /mlflow/artifacts
     volumes:
@@ -113,18 +114,21 @@ services:
       mlflow server
       --backend-store-uri sqlite:///mlflow/mlflow.db
       --default-artifact-root /mlflow/artifacts
+      --serve-artifacts
       --host 0.0.0.0
       --port 5000
+      --allowed-hosts *
     env_file:
       - .env.docker
     networks:
       fraud-detection-net:
         ipv4_address: 172.20.0.4
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
       interval: 30s
       timeout: 10s
-      retries: 3
+      retries: 5
+      start_period: 30s
     restart: unless-stopped
     deploy:
       resources:
@@ -141,18 +145,23 @@ services:
       target: runtime
     image: fraud-detection-training:latest
     container_name: fraud-training
+    user: root
     environment:
       MLFLOW_TRACKING_URI: http://mlflow:5000
       PYTHONUNBUFFERED: 1
     volumes:
       - ./data:/app/data:ro
       - ./configs:/app/configs:ro
+      - mlflow-data:/mlflow
+    depends_on:
+      mlflow:
+        condition: service_healthy
     networks:
       - fraud-detection-net
     env_file:
       - .env.docker
     profiles:
-      - training  
+      - training
     deploy:
       resources:
         limits:

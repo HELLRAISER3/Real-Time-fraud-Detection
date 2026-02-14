@@ -5,21 +5,25 @@ from sklearn.metrics import roc_auc_score, precision_recall_curve, precision_sco
 from src.training.models import get_model
 from src.data_pipeline.load_dataset import load_dataset
 import numpy as np
+import os
 from logger.log import logging
 
 with open("configs/training_config.yaml") as f:
     config = yaml.safe_load(f)
 
+tracking_uri = os.getenv("MLFLOW_TRACKING_URI", config["mlflow"]["tracking_uri"])
+mlflow.set_tracking_uri(tracking_uri)
+
 df = load_dataset(filepath="data/training_processed/training_dataset_final.parquet",
                   ext="parquet")
 
-X_train, y_train, X_val, y_val, X_test, y_test = preprocess_data(df=df, 
+X_train, y_train, X_val, y_val, X_test, y_test = preprocess_data(df=df,
                                                                  target='label',
                                                                  test_size=0.15,
                                                                  val_size=0.1,
                                                                  standardization=config["training"]["standardization"])
 
-mlflow.set_experiment("loan_risk_prediction")
+mlflow.set_experiment(config["mlflow"]["experiment_name"])
 
 with mlflow.start_run(run_name=config["model"]["name"]):
     logging.info(f'=== Training experiment for model: {config["model"]["name"]} is started ===')
@@ -61,5 +65,4 @@ with mlflow.start_run(run_name=config["model"]["name"]):
         model,
         artifact_path="model",
     )
-    print(f"Validation AUC: {auc:.4f}")
 

@@ -7,7 +7,7 @@ __pycache__/
 *$py.class
 
 *.so
-
+.env.docker
 .Python
 build/
 develop-eggs/
@@ -26,7 +26,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
-
+mlruns
 *.manifest
 *.spec
 
